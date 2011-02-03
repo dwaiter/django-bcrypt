@@ -1,0 +1,13 @@
+syntax: glob
+
+*.pyc
+.DS_Store
+.project
+.pydevproject
+*.swp
+*.un~
+
+syntax: regexp
+^build$
+^dist$
+^django_bcrypt.egg-info$
