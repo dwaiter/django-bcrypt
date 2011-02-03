@@ -35,7 +35,7 @@ You can set `BCRYPT_ROUNDS` in `settings.py` to change the number of rounds
 django-bcrypt uses.  The default is `12`.
 
 You can change the number of rounds without breaking already-hashed passwords.
-New passwords will use the old number of rounds, and old ones will use the old
+New passwords will use the new number of rounds, and old ones will use the old
 number.
 
 Acknowledgements
