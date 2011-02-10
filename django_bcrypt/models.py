@@ -17,8 +17,11 @@ def bcrypt_check_password(self, raw_password):
     return _check_password(self, raw_password)
 
 def bcrypt_set_password(self, raw_password):
-    salt = bcrypt.gensalt(rounds)
-    self.password = 'bc$' + bcrypt.hashpw(raw_password, salt)
+    if raw_password is None:
+        self.set_unusable_password()
+    else:
+        salt = bcrypt.gensalt(rounds)
+        self.password = 'bc$' + bcrypt.hashpw(raw_password, salt)
 
 User.check_password = bcrypt_check_password
 User.set_password = bcrypt_set_password
