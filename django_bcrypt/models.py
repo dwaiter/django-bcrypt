@@ -3,11 +3,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 
 
-try:
-    rounds = settings.BCRYPT_ROUNDS
-except AttributeError:
-    rounds = 12
-
+rounds = getattr(settings, "BCRYPT_ROUNDS", 12)
 _check_password = User.check_password
 
 def bcrypt_check_password(self, raw_password):
