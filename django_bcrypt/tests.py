@@ -5,12 +5,17 @@ from django.contrib.auth.models import User, UNUSABLE_PASSWORD
 from django.test import TestCase
 
 from django_bcrypt.models import (bcrypt_check_password, bcrypt_set_password,
-                                  _check_password, _set_password, get_rounds)
+                                  _check_password, _set_password,
+                                  get_rounds, is_enabled)
 
 
 
 
 class CheckPasswordTest(TestCase):
+    def setUp(self):
+        settings.BCRYPT_ENABLED = True
+        settings.BCRYPT_ENABLED_UNDER_TEST = True
+
     def test_bcrypt_password(self):
         user = User()
         bcrypt_set_password(user, 'password')
@@ -43,6 +48,10 @@ class CheckPasswordTest(TestCase):
 
 
 class SetPasswordTest(TestCase):
+    def setUp(self):
+        settings.BCRYPT_ENABLED = True
+        settings.BCRYPT_ENABLED_UNDER_TEST = True
+
     def assertBcrypt(self, hashed, password):
         self.assertEqual(hashed[:3], 'bc$')
         self.assertEqual(hashed[3:], bcrypt.hashpw(password, hashed[3:]))
@@ -51,6 +60,12 @@ class SetPasswordTest(TestCase):
         user = User()
         bcrypt_set_password(user, 'password')
         self.assertBcrypt(user.password, 'password')
+
+    def test_disabled(self):
+        settings.BCRYPT_ENABLED = False
+        user = User()
+        bcrypt_set_password(user, 'password')
+        self.assertFalse(user.password.startswith('bc$'), user.password)
 
     def test_set_unusable_password(self):
         user = User()
@@ -71,7 +86,7 @@ class SetPasswordTest(TestCase):
 
 
 class SettingsTest(TestCase):
-    def test_get_rounds(self):
+    def test_rounds(self):
         orig_rounds = getattr(settings, 'BCRYPT_ROUNDS', None)
         try:
             settings.BCRYPT_ROUNDS = 0
@@ -83,3 +98,21 @@ class SettingsTest(TestCase):
         finally:
             if hasattr(settings._wrapped, 'BCRYPT_ROUNDS'):
                 delattr(settings._wrapped, 'BCRYPT_ROUNDS')
+
+    def test_enabled(self):
+        settings.BCRYPT_ENABLED_UNDER_TEST = True
+        settings.BCRYPT_ENABLED = False
+        self.assertFalse(is_enabled())
+        settings.BCRYPT_ENABLED = True
+        self.assertTrue(is_enabled())
+        delattr(settings, 'BCRYPT_ENABLED')
+        self.assertTrue(is_enabled())
+
+    def test_enabled_under_test(self):
+        settings.BCRYPT_ENABLED = True
+        settings.BCRYPT_ENABLED_UNDER_TEST = True
+        self.assertTrue(is_enabled())
+        settings.BCRYPT_ENABLED_UNDER_TEST = False
+        self.assertFalse(is_enabled())
+        delattr(settings, 'BCRYPT_ENABLED_UNDER_TEST')
+        self.assertFalse(is_enabled())
