@@ -36,6 +36,7 @@ def is_enabled():
     # Are we under a test?
     if hasattr(mail, 'outbox'):
         return getattr(settings, "BCRYPT_ENABLED_UNDER_TEST", False)
+    return True
 
 
 def bcrypt_check_password(self, raw_password):
