@@ -3,10 +3,11 @@ from setuptools import setup, find_packages
 
 install_requires = ['py-bcrypt']
 
-README_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.markdown')
+README_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                           'README.rst')
 
 description = 'Make Django use bcrypt for hashing passwords.'
-long_description = description
+long_description = open(README_PATH, 'r').read()
 
 setup(
     name='django-bcrypt',
