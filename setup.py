@@ -11,7 +11,7 @@ long_description = open(README_PATH, 'r').read()
 
 setup(
     name='django-bcrypt',
-    version='0.9.0',
+    version='0.9.1',
     install_requires=install_requires,
     description=description,
     long_description=long_description,
