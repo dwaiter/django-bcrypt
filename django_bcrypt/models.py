@@ -1,3 +1,9 @@
+"""
+Overrides :class:`django.contrib.auth.models.User` to use bcrypt
+hashing for passwords.
+"""
+
+
 import bcrypt
 
 from django.contrib.auth.models import User
@@ -14,6 +20,12 @@ def get_rounds():
 
 
 def bcrypt_check_password(self, raw_password):
+    """
+    Returns a boolean of whether the *raw_password* was correct.
+
+    Attempts to validate with bcrypt, but falls back to Django's
+    ``User.check_password()`` if the hash is incorrect.
+    """
     if self.password.startswith('bc$'):
         salt_and_hash = self.password[3:]
         return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
@@ -23,6 +35,9 @@ User.check_password = bcrypt_check_password
 
 
 def bcrypt_set_password(self, raw_password):
+    """
+    Sets the user's password to *raw_password*, hashed with bcrypt.
+    """
     if raw_password is None:
         self.set_unusable_password()
     else:
