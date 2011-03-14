@@ -4,7 +4,13 @@ from django.contrib.auth.models import User
 from django.conf import settings
 
 
-rounds = getattr(settings, "BCRYPT_ROUNDS", 12)
+def get_rounds():
+    """
+    Returns the number of rounds to use for bcrypt hashing.
+
+    Retrieves this from :data:`settings.BCRYPT_ROUNDS`.
+    """
+    return getattr(settings, "BCRYPT_ROUNDS", 12)
 
 
 def bcrypt_check_password(self, raw_password):
@@ -20,7 +26,7 @@ def bcrypt_set_password(self, raw_password):
     if raw_password is None:
         self.set_unusable_password()
     else:
-        salt = bcrypt.gensalt(rounds)
+        salt = bcrypt.gensalt(get_rounds())
         self.password = 'bc$' + bcrypt.hashpw(raw_password, salt)
 _set_password = User.set_password
 User.set_password = bcrypt_set_password
