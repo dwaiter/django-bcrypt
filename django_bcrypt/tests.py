@@ -21,6 +21,13 @@ class CheckPasswordTest(TestCase):
         self.assertTrue(bcrypt_check_password(user, 'password'))
         self.assertFalse(bcrypt_check_password(user, 'invalid'))
 
+    def test_unicode_password(self):
+        user = User()
+        with settings():
+            bcrypt_set_password(user, u"aáåäeéêëoôö")
+        self.assertTrue(bcrypt_check_password(user, u"aaaaeeeeooo"))
+        self.assertFalse(bcrypt_check_password(user, 'invalid'))
+
     def test_sha1_password(self):
         user = User()
         _set_password(user, 'password')
