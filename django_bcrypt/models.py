@@ -45,10 +45,7 @@ def is_enabled():
 
 def migrate_to_bcrypt():
     """Returns ``True`` if password migration is activated. """
-    migrated = getattr(settings, "BCRYPT_MIGRATE", False)
-    if migrated:
-        return True
-    return False
+    return getattr(settings, "BCRYPT_MIGRATE", True)
 
 
 def bcrypt_check_password(self, raw_password):
@@ -61,10 +58,13 @@ def bcrypt_check_password(self, raw_password):
     if self.password.startswith('bc$'):
         salt_and_hash = self.password[3:]
         return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
-    elif self.password.startswith('sha1$') and migrate_to_bcrypt:
-        bcrypt_password = bcrypt_set_password(raw_password)
-        salt_and_hash = bcrypt_password[3:]
-        return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
+    elif _check_password(self, raw_password):
+        if is_enabled() and migrate_to_bcrypt():
+            self.set_password(raw_password)
+            salt_and_hash = self.password[3:]
+            return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
+        return True
+    return False
 _check_password = User.check_password
 User.check_password = bcrypt_check_password
 
@@ -78,5 +78,6 @@ def bcrypt_set_password(self, raw_password):
     else:
         salt = bcrypt.gensalt(get_rounds())
         self.password = 'bc$' + bcrypt.hashpw(raw_password, salt)
+        self.save()
 _set_password = User.set_password
 User.set_password = bcrypt_set_password

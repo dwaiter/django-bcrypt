@@ -10,7 +10,7 @@ from django.utils.functional import LazyObject
 
 from django_bcrypt.models import (bcrypt_check_password, bcrypt_set_password,
                                   _check_password, _set_password,
-                                  get_rounds, is_enabled)
+                                  get_rounds, is_enabled, migrate_to_bcrypt)
 
 
 class CheckPasswordTest(TestCase):
@@ -40,18 +40,23 @@ class CheckPasswordTest(TestCase):
         password_12 = user.password
         self.assertTrue(bcrypt_check_password(user, 'password'))
 
-    def test_migrated_password(self):
-        user = User()
-        with settings(BCRYPT_MIGRATE=True):
-            bcrypt_set_password(user, 'password')
-        self.assertTrue(bcrypt_check_password(user, 'password'))
 
-    def test_non_migrated_password(self):
+class MigratePasswordTest(TestCase):
+    def test_migrate_password(self):
         user = User()
-        with settings(BCRYPT_MIGRATE=False):
+        with settings(BCRYPT_MIGRATE=True, BCRYPT_ENABLED_UNDER_TEST=True):
             _set_password(user, 'password')
-        self.assertTrue(bcrypt_check_password(user, 'password'))
-        self.assertFalse(bcrypt_check_password(user, 'invalid'))
+            self.assertTrue(user.password.startswith('sha1$'))
+            self.assertTrue(bcrypt_check_password(user, 'password'))
+            self.assertTrue(user.password.startswith('bc$'))
+
+    def test_no_migrate_password(self):
+        user = User()
+        with settings(BCRYPT_MIGRATE=False, BCRYPT_ENABLED_UNDER_TEST=True):
+            _set_password(user, 'password')
+            self.assertTrue(user.password.startswith('sha1$'))
+            self.assertTrue(bcrypt_check_password(user, 'password'))
+            self.assertTrue(user.password.startswith('sha1$'))
 
 
 class SetPasswordTest(TestCase):
@@ -109,6 +114,12 @@ class SettingsTest(TestCase):
             self.assertFalse(is_enabled())
         with settings(BCRYPT_ENABLED_UNDER_TEST=NotImplemented):
             self.assertFalse(is_enabled())
+
+    def test_migrate_to_bcrypt(self):
+        with settings(BCRYPT_MIGRATE=False):
+            self.assertEqual(migrate_to_bcrypt(), False)
+        with settings(BCRYPT_MIGRATE=True):
+            self.assertEqual(migrate_to_bcrypt(), True)
 
 
 def settings(**kwargs):
