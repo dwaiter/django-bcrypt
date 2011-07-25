@@ -41,24 +41,6 @@ class CheckPasswordTest(TestCase):
         self.assertTrue(bcrypt_check_password(user, 'password'))
 
 
-class MigratePasswordTest(TestCase):
-    def test_migrate_password(self):
-        user = User()
-        with settings(BCRYPT_MIGRATE=True, BCRYPT_ENABLED_UNDER_TEST=True):
-            _set_password(user, 'password')
-            self.assertTrue(user.password.startswith('sha1$'))
-            self.assertTrue(bcrypt_check_password(user, 'password'))
-            self.assertTrue(user.password.startswith('bc$'))
-
-    def test_no_migrate_password(self):
-        user = User()
-        with settings(BCRYPT_MIGRATE=False, BCRYPT_ENABLED_UNDER_TEST=True):
-            _set_password(user, 'password')
-            self.assertTrue(user.password.startswith('sha1$'))
-            self.assertTrue(bcrypt_check_password(user, 'password'))
-            self.assertTrue(user.password.startswith('sha1$'))
-
-
 class SetPasswordTest(TestCase):
     def assertBcrypt(self, hashed, password):
         self.assertEqual(hashed[:3], 'bc$')
@@ -88,6 +70,31 @@ class SetPasswordTest(TestCase):
             settings.BCRYPT_ROUNDS = 0
             bcrypt_set_password(user, 'password')
             self.assertBcrypt(user.password, 'password')
+
+
+class MigratePasswordTest(TestCase):
+    def assertBcrypt(self, hashed, password):
+        self.assertEqual(hashed[:3], 'bc$')
+        self.assertEqual(hashed[3:], bcrypt.hashpw(password, hashed[3:]))
+
+    def assertSha1(self, hashed, password):
+        self.assertEqual(hashed[:5], 'sha1$')
+
+    def test_migrate_password(self):
+        user = User()
+        with settings(BCRYPT_MIGRATE=True, BCRYPT_ENABLED_UNDER_TEST=True):
+            _set_password(user, 'password')
+            self.assertSha1(user.password, 'password')
+            self.assertTrue(bcrypt_check_password(user, 'password'))
+            self.assertBcrypt(user.password, 'password')
+
+    def test_no_migrate_password(self):
+        user = User()
+        with settings(BCRYPT_MIGRATE=False, BCRYPT_ENABLED_UNDER_TEST=True):
+            _set_password(user, 'password')
+            self.assertSha1(user.password, 'password')
+            self.assertTrue(bcrypt_check_password(user, 'password'))
+            self.assertSha1(user.password, 'password')
 
 
 class SettingsTest(TestCase):
