@@ -13,6 +13,10 @@ You can set the following ``settings``:
 
 ``BCRYPT_ROUNDS``
    Number of rounds to use for bcrypt hashing. Defaults to 12.
+
+``BCRYPT_MIGRATE``
+   Enables bcrypt password migration on a check_password() call.
+   Default is set to False.
 """
 
 
@@ -42,33 +46,25 @@ def is_enabled():
 def migrate_to_bcrypt():
     """Returns ``True`` if password migration is activated. """
     migrated = getattr(settings, "BCRYPT_MIGRATE", False)
-    if not migrated:
-        return False
-    return True
+    if migrated:
+        return True
+    return False
 
 
 def bcrypt_check_password(self, raw_password):
     """
     Returns a boolean of whether the *raw_password* was correct.
 
-    If bcrypt migration is activated, validate password only
-    with bcrypt. If not, attempt to validate with bcrypt, but fall back
-    to Django's ``User.check_password()`` if the hash is incorrect.
+    Attempts to validate with bcrypt and converts sha1 password to bcrypt
+    password if the migration flag is activated.
     """
-    if migrate_to_bcrypt:
-        if self.password.startswith('sha1$')
-            and _check_password(self, raw_password):
-            bcrypt_set_password(self, raw_password)
-            return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
-        elif self.password.startswith('bc$'):
-            salt_and_hash = self.password[3:]
-            return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
-        return _check_password(self, raw_password)
-    else:
-        if self.password.startswith('bc$'):
-            salt_and_hash = self.password[3:]
-            return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
-        return _check_password(self, raw_password)
+    if self.password.startswith('bc$'):
+        salt_and_hash = self.password[3:]
+        return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
+    elif self.password.startswith('sha1$') and migrate_to_bcrypt:
+        bcrypt_password = bcrypt_set_password(raw_password)
+        salt_and_hash = bcrypt_password[3:]
+        return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
 _check_password = User.check_password
 User.check_password = bcrypt_check_password
 
