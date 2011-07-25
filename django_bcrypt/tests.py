@@ -40,6 +40,19 @@ class CheckPasswordTest(TestCase):
         password_12 = user.password
         self.assertTrue(bcrypt_check_password(user, 'password'))
 
+    def test_migrated_password(self):
+        user = User()
+        with settings(BCRYPT_MIGRATE=True):
+            bcrypt_set_password(user, 'password')
+        self.assertTrue(bcrypt_check_password(user, 'password'))
+
+    def test_non_migrated_password(self):
+        user = User()
+        with settings(BCRYPT_MIGRATE=False):
+            _set_password(user, 'password')
+        self.assertTrue(bcrypt_check_password(user, 'password'))
+        self.assertFalse(bcrypt_check_password(user, 'invalid'))
+
 
 class SetPasswordTest(TestCase):
     def assertBcrypt(self, hashed, password):
