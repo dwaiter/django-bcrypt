@@ -45,7 +45,7 @@ def is_enabled():
 
 def migrate_to_bcrypt():
     """Returns ``True`` if password migration is activated. """
-    return getattr(settings, "BCRYPT_MIGRATE", True)
+    return getattr(settings, "BCRYPT_MIGRATE", False)
 
 
 def bcrypt_check_password(self, raw_password):

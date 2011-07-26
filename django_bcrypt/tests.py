@@ -127,6 +127,8 @@ class SettingsTest(TestCase):
             self.assertEqual(migrate_to_bcrypt(), False)
         with settings(BCRYPT_MIGRATE=True):
             self.assertEqual(migrate_to_bcrypt(), True)
+        with settings(BCRYPT_MIGRATE=NotImplemented):
+            self.assertEqual(migrate_to_bcrypt(), False)
 
 
 def settings(**kwargs):
