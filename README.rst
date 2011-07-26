@@ -42,6 +42,11 @@ You can change the number of rounds without breaking already-hashed passwords.
 New passwords will use the new number of rounds, and old ones will use the old
 number.
 
+You can set ``BCRYPT_MIGRATE`` in ``settings.py`` to automatically migrate old
+sha1 passwords to bcrypt on login (or more specifically every time
+``User.check_password()`` is called).
+The hash is also recomputed when ``BCRYPT_ROUNDS`` changes.
+
 
 Acknowledgements
 ----------------
