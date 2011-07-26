@@ -63,22 +63,25 @@ def bcrypt_check_password(self, raw_password):
         In case of a password migration this method calls ``User.save()`` to
         persist the changes.
     """
-    result = False
+    pwd_ok = False
+    should_change = False
     if self.password.startswith('bc$'):
         salt_and_hash = self.password[3:]
-        result = bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
-        rounds = int(salt_and_hash.split('$')[2])
-        if not rounds == get_rounds():
-            self.set_password(raw_password)
-            self.save()
+        pwd_ok = bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
+        if pwd_ok:
+            rounds = int(salt_and_hash.split('$')[2])
+            should_change = rounds != get_rounds()
     elif _check_password(self, raw_password):
-        result = True
-        if is_enabled() and migrate_to_bcrypt():
-            self.set_password(raw_password)
-            salt_and_hash = self.password[3:]
-            assert bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
-            self.save()
-    return result
+        pwd_ok = True
+        should_change = True
+
+    if pwd_ok and should_change and is_enabled() and migrate_to_bcrypt():
+        self.set_password(raw_password)
+        salt_and_hash = self.password[3:]
+        assert bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
+        self.save()
+
+    return pwd_ok
 _check_password = User.check_password
 User.check_password = bcrypt_check_password
 

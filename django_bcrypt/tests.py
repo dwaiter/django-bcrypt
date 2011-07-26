@@ -81,15 +81,17 @@ class MigratePasswordTest(TestCase):
         self.assertEqual(hashed[:5], 'sha1$')
 
     def test_migrate_sha1_to_bcrypt(self):
-        user = User()
+        user = User(username='username')
         with settings(BCRYPT_MIGRATE=True, BCRYPT_ENABLED_UNDER_TEST=True):
             _set_password(user, 'password')
             self.assertSha1(user.password, 'password')
             self.assertTrue(bcrypt_check_password(user, 'password'))
             self.assertBcrypt(user.password, 'password')
+        self.assertEqual(User.objects.get(username='username').password,
+                         user.password)
 
     def test_migrate_bcrypt_to_bcrypt(self):
-        user = User()
+        user = User(username='username')
         with settings(BCRYPT_MIGRATE=True,
                       BCRYPT_ROUNDS=10,
                       BCRYPT_ENABLED_UNDER_TEST=True):
@@ -99,7 +101,19 @@ class MigratePasswordTest(TestCase):
                       BCRYPT_ENABLED_UNDER_TEST=True):
             user.check_password('password')
         salt_and_hash = user.password[3:]
-        self.assertEquals(salt_and_hash.split('$')[2], '12')
+        self.assertEqual(salt_and_hash.split('$')[2], '12')
+        self.assertEqual(User.objects.get(username='username').password,
+                         user.password)
+
+    def test_no_bcrypt_to_bcrypt(self):
+        user = User(username='username')
+        with settings(BCRYPT_MIGRATE=True,
+                      BCRYPT_ROUNDS=10,
+                      BCRYPT_ENABLED_UNDER_TEST=True):
+            user.set_password('password')
+            old_password = user.password
+            user.check_password('password')
+        self.assertEqual(old_password, user.password)
 
     def test_no_migrate_password(self):
         user = User()
