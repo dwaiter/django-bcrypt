@@ -53,7 +53,7 @@ def bcrypt_check_password(self, raw_password):
     Returns a boolean of whether the *raw_password* was correct.
 
     Attempts to validate with bcrypt, but falls back to Django's
-    ``User. check_password`` if the hash is incorrect.
+    ``User.check_password()`` if the hash is incorrect.
 
     If ``BCRYPT_MIGRATE`` is set, attempts to convert sha1 password to bcrypt
     or converts between different bcrypt cost values.
