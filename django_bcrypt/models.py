@@ -56,7 +56,7 @@ def bcrypt_check_password(self, raw_password):
     ``User.check_password()`` if the hash is incorrect.
 
     If ``BCRYPT_MIGRATE`` is set, attempts to convert sha1 password to bcrypt
-    or converts between different bcrypt cost values.
+    or converts between different bcrypt rounds values.
 
     .. note::
 
@@ -67,6 +67,10 @@ def bcrypt_check_password(self, raw_password):
     if self.password.startswith('bc$'):
         salt_and_hash = self.password[3:]
         result = bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
+        rounds = int(salt_and_hash.split('$')[2])
+        if not rounds == get_rounds():
+            self.set_password(raw_password)
+            self.save()
     elif _check_password(self, raw_password):
         result = True
         if is_enabled() and migrate_to_bcrypt():

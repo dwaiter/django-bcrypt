@@ -80,13 +80,26 @@ class MigratePasswordTest(TestCase):
     def assertSha1(self, hashed, password):
         self.assertEqual(hashed[:5], 'sha1$')
 
-    def test_migrate_password(self):
+    def test_migrate_sha1_to_bcrypt(self):
         user = User()
         with settings(BCRYPT_MIGRATE=True, BCRYPT_ENABLED_UNDER_TEST=True):
             _set_password(user, 'password')
             self.assertSha1(user.password, 'password')
             self.assertTrue(bcrypt_check_password(user, 'password'))
             self.assertBcrypt(user.password, 'password')
+
+    def test_migrate_bcrypt_to_bcrypt(self):
+        user = User()
+        with settings(BCRYPT_MIGRATE=True,
+                      BCRYPT_ROUNDS=10,
+                      BCRYPT_ENABLED_UNDER_TEST=True):
+            user.set_password('password')
+        with settings(BCRYPT_MIGRATE=True,
+                      BCRYPT_ROUNDS=12,
+                      BCRYPT_ENABLED_UNDER_TEST=True):
+            user.check_password('password')
+        salt_and_hash = user.password[3:]
+        self.assertEquals(salt_and_hash.split('$')[2], '12')
 
     def test_no_migrate_password(self):
         user = User()
