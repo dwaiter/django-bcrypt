@@ -44,7 +44,7 @@ def is_enabled():
 
 
 def migrate_to_bcrypt():
-    """Returns ``True`` if password migration is activated. """
+    """Returns ``True`` if password migration is activated."""
     return getattr(settings, "BCRYPT_MIGRATE", False)
 
 
@@ -52,19 +52,29 @@ def bcrypt_check_password(self, raw_password):
     """
     Returns a boolean of whether the *raw_password* was correct.
 
-    Attempts to validate with bcrypt and converts sha1 password to bcrypt
-    password if the migration flag is activated.
+    Attempts to validate with bcrypt, but falls back to Django's
+    ``User. check_password`` if the hash is incorrect.
+
+    If ``BCRYPT_MIGRATE`` is set, attempts to convert sha1 password to bcrypt
+    or converts between different bcrypt cost values.
+
+    .. note::
+
+        In case of a password migration this method calls ``User.save()`` to
+        persist the changes.
     """
+    result = False
     if self.password.startswith('bc$'):
         salt_and_hash = self.password[3:]
-        return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
+        result = bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
     elif _check_password(self, raw_password):
+        result = True
         if is_enabled() and migrate_to_bcrypt():
             self.set_password(raw_password)
             salt_and_hash = self.password[3:]
-            return bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
-        return True
-    return False
+            assert bcrypt.hashpw(raw_password, salt_and_hash) == salt_and_hash
+            self.save()
+    return result
 _check_password = User.check_password
 User.check_password = bcrypt_check_password
 
@@ -78,6 +88,5 @@ def bcrypt_set_password(self, raw_password):
     else:
         salt = bcrypt.gensalt(get_rounds())
         self.password = 'bc$' + bcrypt.hashpw(raw_password, salt)
-        self.save()
 _set_password = User.set_password
 User.set_password = bcrypt_set_password
