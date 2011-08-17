@@ -10,7 +10,7 @@ from django.utils.functional import LazyObject
 
 from django_bcrypt.models import (bcrypt_check_password, bcrypt_set_password,
                                   _check_password, _set_password,
-                                  get_rounds, is_enabled)
+                                  get_rounds, is_enabled, migrate_to_bcrypt)
 
 
 class CheckPasswordTest(TestCase):
@@ -79,6 +79,58 @@ class SetPasswordTest(TestCase):
             self.assertBcrypt(user.password, 'password')
 
 
+class MigratePasswordTest(TestCase):
+    def assertBcrypt(self, hashed, password):
+        self.assertEqual(hashed[:3], 'bc$')
+        self.assertEqual(hashed[3:], bcrypt.hashpw(password, hashed[3:]))
+
+    def assertSha1(self, hashed, password):
+        self.assertEqual(hashed[:5], 'sha1$')
+
+    def test_migrate_sha1_to_bcrypt(self):
+        user = User(username='username')
+        with settings(BCRYPT_MIGRATE=True, BCRYPT_ENABLED_UNDER_TEST=True):
+            _set_password(user, 'password')
+            self.assertSha1(user.password, 'password')
+            self.assertTrue(bcrypt_check_password(user, 'password'))
+            self.assertBcrypt(user.password, 'password')
+        self.assertEqual(User.objects.get(username='username').password,
+                         user.password)
+
+    def test_migrate_bcrypt_to_bcrypt(self):
+        user = User(username='username')
+        with settings(BCRYPT_MIGRATE=True,
+                      BCRYPT_ROUNDS=10,
+                      BCRYPT_ENABLED_UNDER_TEST=True):
+            user.set_password('password')
+        with settings(BCRYPT_MIGRATE=True,
+                      BCRYPT_ROUNDS=12,
+                      BCRYPT_ENABLED_UNDER_TEST=True):
+            user.check_password('password')
+        salt_and_hash = user.password[3:]
+        self.assertEqual(salt_and_hash.split('$')[2], '12')
+        self.assertEqual(User.objects.get(username='username').password,
+                         user.password)
+
+    def test_no_bcrypt_to_bcrypt(self):
+        user = User(username='username')
+        with settings(BCRYPT_MIGRATE=True,
+                      BCRYPT_ROUNDS=10,
+                      BCRYPT_ENABLED_UNDER_TEST=True):
+            user.set_password('password')
+            old_password = user.password
+            user.check_password('password')
+        self.assertEqual(old_password, user.password)
+
+    def test_no_migrate_password(self):
+        user = User()
+        with settings(BCRYPT_MIGRATE=False, BCRYPT_ENABLED_UNDER_TEST=True):
+            _set_password(user, 'password')
+            self.assertSha1(user.password, 'password')
+            self.assertTrue(bcrypt_check_password(user, 'password'))
+            self.assertSha1(user.password, 'password')
+
+
 class SettingsTest(TestCase):
     def test_rounds(self):
         with settings(BCRYPT_ROUNDS=0):
@@ -103,6 +155,14 @@ class SettingsTest(TestCase):
             self.assertFalse(is_enabled())
         with settings(BCRYPT_ENABLED_UNDER_TEST=NotImplemented):
             self.assertFalse(is_enabled())
+
+    def test_migrate_to_bcrypt(self):
+        with settings(BCRYPT_MIGRATE=False):
+            self.assertEqual(migrate_to_bcrypt(), False)
+        with settings(BCRYPT_MIGRATE=True):
+            self.assertEqual(migrate_to_bcrypt(), True)
+        with settings(BCRYPT_MIGRATE=NotImplemented):
+            self.assertEqual(migrate_to_bcrypt(), False)
 
 
 def settings(**kwargs):
