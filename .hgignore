@@ -11,3 +11,4 @@ syntax: regexp
 ^build$
 ^dist$
 ^django_bcrypt.egg-info$
+docs/build
