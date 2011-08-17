@@ -8,6 +8,10 @@ django-bcrypt
 
 django-bcrypt makes it easy to use bcrypt to hash passwords with Django.
 
+* **Mercurial:** http://bitbucket.org/dwaiter/django-bcrypt/
+* **Git:** http://github.com/dwaiter/django-bcrypt/
+* **Documentation:** http://django-bcrypt.rtfd.org/
+* **Issues:** http://bitbucket.org/dwaiter/django-bcrypt/issues?status=new&status=open
 
 Installation and Usage
 ----------------------
