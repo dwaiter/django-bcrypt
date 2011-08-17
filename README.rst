@@ -15,9 +15,9 @@ Installation and Usage
 Install the package with `pip`_ and `Mercurial`_ or `git`_::
 
     pip install -e hg+http://bitbucket.org/dwaiter/django-bcrypt#egg=django-bcrypt
-    
+
     # or ...
-    
+
     pip install -e git://github.com/dwaiter/django-bcrypt.git#egg=django-bcrypt
 
 .. _pip: http://pip.openplans.org/
@@ -28,31 +28,54 @@ Add ``django_bcrypt`` to your ``INSTALLED_APPS``.
 
 That's it.
 
-Any new passwords set will be hashed with bcrypt.  Old passwords will still
-work fine.
+Any new passwords set will be hashed with bcrypt.  Old passwords will still work
+fine.
 
 
 Configuration
 -------------
 
-You can set ``BCRYPT_ROUNDS`` in ``settings.py`` to change the number of
-rounds django-bcrypt uses.  The default is ``12``.
+You can configure how django-bcrypt behaves with a few settings in your
+``settings.py`` file.
 
-You can change the number of rounds without breaking already-hashed passwords.
-New passwords will use the new number of rounds, and old ones will use the old
-number.
+``BCRYPT_ENABLED``
+``````````````````
 
-You can set ``BCRYPT_MIGRATE`` in ``settings.py`` to automatically migrate old
-sha1 passwords to bcrypt on login (or more specifically every time
-``User.check_password()`` is called).
-The hash is also recomputed when ``BCRYPT_ROUNDS`` changes.
+Enables bcrypt hashing when ``User.set_password()`` is called.
+
+Default: ``True``
+
+``BCRYPT_ENABLED_UNDER_TEST``
+`````````````````````````````
+
+Enables bcrypt hashing when running inside Django TestCases.
+
+Default: ``False`` (to speed up user creation)
+
+``BCRYPT_ROUNDS``
+`````````````````
+
+Number of rounds to use for bcrypt hashing.  Increase this as computers get faster.
+
+You can change the number of rounds without breaking already-hashed passwords.  New
+passwords will use the new number of rounds, and old ones will use the old number.
+
+Default: ``12``
+
+``BCRYPT_MIGRATE``
+``````````````````
+
+Enables bcrypt password migration on a ``check_password()`` call.
+
+The hash is also migrated when ``BCRYPT_ROUNDS`` changes.
+
+Default: ``False``
 
 
 Acknowledgements
 ----------------
 
-This is pretty much a packaged-up version of `this blog post`_ for easier
-use.
+This is pretty much a packaged-up version of `this blog post`_ for easier use.
 
 It also depends on the `py-bcrypt`_ library.
 
@@ -61,3 +84,4 @@ It also depends on the `py-bcrypt`_ library.
 
 .. _py-bcrypt:
    http://www.mindrot.org/projects/py-bcrypt/
+
