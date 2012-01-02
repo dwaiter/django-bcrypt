@@ -1,5 +1,8 @@
 """
-Overrides :class:`django.contrib.auth.models.User` to use bcrypt
+In Django 1.4+, simply adds itself to the PASSWORD_HASHERS setting so old
+passwords will be converted properly.
+
+Otherwise, overrides :class:`django.contrib.auth.models.User` to use bcrypt
 hashing for passwords.
 
 You can set the following ``settings``:
@@ -83,8 +86,6 @@ def bcrypt_check_password(self, raw_password):
         self.save()
 
     return pwd_ok
-_check_password = User.check_password
-User.check_password = bcrypt_check_password
 
 
 def bcrypt_set_password(self, raw_password):
@@ -96,5 +97,17 @@ def bcrypt_set_password(self, raw_password):
     else:
         salt = bcrypt.gensalt(get_rounds())
         self.password = 'bc$' + bcrypt.hashpw(smart_str(raw_password), salt)
-_set_password = User.set_password
-User.set_password = bcrypt_set_password
+
+
+try:
+    from django.contrib.auth.hashers import BCryptPasswordHasher
+
+    class LegacyDjangoBCryptPasswordHasher(BCryptPasswordHasher):
+        algorithm = 'bc'
+
+    settings.PASSWORD_HASHERS = settings.PASSWORD_HASHERS + ('django_bcrypt.models.LegacyDjangoBCryptPasswordHasher',)
+except ImportError:
+    _check_password = User.check_password
+    User.check_password = bcrypt_check_password
+    _set_password = User.set_password
+    User.set_password = bcrypt_set_password
